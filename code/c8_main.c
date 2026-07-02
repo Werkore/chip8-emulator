@@ -81,6 +81,7 @@ typedef struct{
 // Chip8_t-----------------------------------------------
 //
 typedef struct{
+   instruction_  instruction;
    uint16          stack[12];  // Subroutine stack
    uint16                  I;  // Index register
    uint16                 pc;  // Program counter
@@ -89,11 +90,10 @@ typedef struct{
    uint8         delay_timer;  // Decrements at 60hz when > 0
    uint16*         stack_ptr;
    uint8         sound_timer;  // Decrements at 60hz when > 0
-   bool    display[64 * 32];  // Original chip8 resolution pixels
-   bool          keypad[16];  // Hexadecimal keypad 0x0-0xF
-   char*            rom_name;  // Currently running rom
    emulator_state_t    state;
-   instruction_t instruction;
+   bool     display[64 * 32];  // Original chip8 resolution pixels
+   bool           keypad[16];  // Hexadecimal keypad 0x0-0xF
+   char*            rom_name;  // Currently running rom
 }chip8_t;
 
 // init_sdl----------------------------------------
