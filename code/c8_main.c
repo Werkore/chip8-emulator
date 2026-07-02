@@ -81,7 +81,7 @@ typedef struct{
 // Chip8_t-----------------------------------------------
 //
 typedef struct{
-   instruction_  instruction;
+   instruction_t instruction;
    uint16          stack[12];  // Subroutine stack
    uint16                  I;  // Index register
    uint16                 pc;  // Program counter
