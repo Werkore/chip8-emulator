@@ -102,7 +102,6 @@ typedef struct{
 // init_sdl----------------------------------------
 //
 bool init_sdl(sdl_t *sdl, config_t *config){
-    SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "x11");
     if(!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS)){
         fprintf(stderr,"Failed to init SDL: %s\n",SDL_GetError());
         return false;
