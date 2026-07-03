@@ -115,7 +115,7 @@ bool init_sdl(sdl_t *sdl, config_t *config){
    // SDL_RenderClear(sdl->renderer);
    // SDL_RenderPresent(sdl->renderer);
 
-   return 1;
+   return true;
 }
 
 // set_config_from_args---------------------------------------
