@@ -49,7 +49,7 @@ typedef float   float32;
 typedef struct{
     SDL_Window     *window;
     SDL_Renderer *renderer;
-    SDL_Event       event;
+    SDL_Event        event;
 }sdl_t;
 
 // config_t struct------------------------------------
@@ -109,8 +109,22 @@ bool init_sdl(sdl_t *sdl, config_t *config){
 
     // TODO NOTE(werkor): find out how to make it so i can resize the window to be start floating and be able tiled again (SDL_WINDOW_RESIZABLE)
    sdl->window = SDL_CreateWindow("Chip8", config->window_width * config->scale_factor, config->window_height * config->scale_factor, SDL_WINDOW_FLAGS);
+   
+   if(sdl->window == NULL){
+       fprintf(stderr, "Error creating window: %s\n", SDL_GetError());
+       SDL_Quit();
+       return false;
+   }
+   
    sdl->renderer = SDL_CreateRenderer(sdl->window, NULL);
-
+   if(sdl->renderer == NULL){
+       fprintf(stderr, "Error creating window: %s\n", SDL_GetError());
+       SDL_DestroyWindow(sdl->window);
+       SDL_Quit();
+       sdl->window = NULL;
+       return false;
+   }
+   
    // SDL_SetRenderDrawColor(sdl->renderer, 0, 0, 0, 255); // BLACK
    // SDL_RenderClear(sdl->renderer);
    // SDL_RenderPresent(sdl->renderer);
@@ -129,7 +143,7 @@ bool set_config_from_args(config_t *config, const int argc, char *argv){
         .window_width  = 64, // original chip8 width
         .window_height = 32, // original chip8 height
         .fg_color      = 0xFFFFFFFF, // on color (WHITE)
-        .bg_color      = 0x000000FF, // off color (BLACK)
+        .bg_color      = 0x00000000, // off color (BLACK)
         .scale_factor  = 20,         // ammount to scale screen by
     };
 
