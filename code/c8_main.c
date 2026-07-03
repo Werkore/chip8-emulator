@@ -20,6 +20,9 @@
        have to look into emulate_instructions or update_screen again
        -getting like horitzontal lines on one half and a black half on the right
       
+       -swapping the bg and fg colors make it render differently for some reason
+        figure out why 
+      
  */
 
 // value typedefs----------------------------------
@@ -98,13 +101,14 @@ typedef struct{
 
 // init_sdl----------------------------------------
 //
-bool8 init_sdl(sdl_t *sdl, config_t *config){
+bool init_sdl(sdl_t *sdl, config_t *config){
+    SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "x11");
     if(!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS)){
         fprintf(stderr,"Failed to init SDL: %s\n",SDL_GetError());
-        return 0;
+        return false;
     }
 
-    // NOTE(werkor): find out how to make it so i can resize the window to be start floating and be able tiled again (SDL_WINDOW_RESIZABLE)
+    // TODO NOTE(werkor): find out how to make it so i can resize the window to be start floating and be able tiled again (SDL_WINDOW_RESIZABLE)
    sdl->window = SDL_CreateWindow("Chip8", config->window_width * config->scale_factor, config->window_height * config->scale_factor, SDL_WINDOW_FLAGS);
    sdl->renderer = SDL_CreateRenderer(sdl->window, NULL);
 
@@ -117,7 +121,7 @@ bool8 init_sdl(sdl_t *sdl, config_t *config){
 
 // set_config_from_args---------------------------------------
 //
-bool8 set_config_from_args(config_t *config, const int argc, char *argv){
+bool set_config_from_args(config_t *config, const int argc, char *argv){
 
     // defaults
     // config->window_width = 64;
@@ -125,8 +129,8 @@ bool8 set_config_from_args(config_t *config, const int argc, char *argv){
     *config = (config_t){
         .window_width  = 64, // original chip8 width
         .window_height = 32, // original chip8 height
-        .fg_color      = 0x00000000, // on color (WHITE)
-        .bg_color      = 0xFFFFFFFF, // off color (BLACK)
+        .fg_color      = 0xFFFFFFFF, // on color (WHITE)
+        .bg_color      = 0x000000FF, // off color (BLACK)
         .scale_factor  = 20,         // ammount to scale screen by
     };
 
@@ -136,12 +140,12 @@ bool8 set_config_from_args(config_t *config, const int argc, char *argv){
 
     // TODO(werkor): add code to override defaults
 
-    return 1;
+    return true;
 }
 
 // init_chip8--------------------------------------------
 //
-bool8 init_chip8(chip8_t *chip8, char* rom_name){
+bool init_chip8(chip8_t *chip8, char* rom_name){
     const uint32 entry_point = 0x200; // chip8 rom entry point
 
     const uint8 font[80] ={
@@ -170,7 +174,7 @@ bool8 init_chip8(chip8_t *chip8, char* rom_name){
     FILE *rom = fopen(rom_name, "rb");
     if(!rom){
         fprintf(stderr, "Rom file %s is invalid or does not exist!\n", rom_name);
-        return -1;
+        return false;
     }
 
     // get/check rom size
@@ -281,7 +285,7 @@ void emulate_instruction(chip8_t *chip8, config_t config){
    #endif
    // emualte opcode
    switch((chip8->instruction.opcode >> 12) & 0x0F){
-       case 0x0:
+       case 0x00:
          if(chip8->instruction.NN == 0xE0){
              // 0x00E0: Clear the screen
              memset(&chip8->display[0], 0, sizeof(chip8->display));
@@ -325,8 +329,8 @@ void emulate_instruction(chip8_t *chip8, config_t config){
 
        case 0x0D:{
          // 0xDXYN: Draw N-height sprite at coords X,Y: Read from memory location I;
-         // screen pixles are XOR'd with spirte bits;
-         // VF (carry flag) is set if any screen pixels are set off;
+         // screen pixles are XOR'd with spirte bits
+         // VF (carry flag) is set if any screen pixels are set off
          // This is usefull for collision detection or other reasons
          uint8 X_cord = chip8->v[chip8->instruction.X] % config.window_width;
          uint8 Y_cord = chip8->v[chip8->instruction.Y] % config.window_height;
@@ -395,6 +399,7 @@ void clear_screen(sdl_t *sdl,config_t *config){
 }
 
 // update_screen------------------------------------
+// 
 void update_screen(sdl_t *sdl, config_t *config, chip8_t *chip8){
   // SDL_Rect rect = {.x = 0,.y = 0, .w = config->scale_factor, .h = config->scale_factor};
   SDL_FRect frect = {.x = 0.0f, .y = 0.0f, .w = config->scale_factor, .h = config->scale_factor};
@@ -413,26 +418,17 @@ void update_screen(sdl_t *sdl, config_t *config, chip8_t *chip8){
   // Loop through display pixels, draw a rect per pixel to the sdl window
   for(uint32 i = 0; i < sizeof(chip8->display); ++i){
       // Translate 1d index i value to 2d x/y coordinates
-      // rect.x = (i % config->window_width) * config->scale_factor;
-      // rect.y = (i / config->window_width) * config->scale_factor;
-      // frect.x = (float32)(i % config->window_height) * (float32)config->scale_factor;
-      // frect.y = (float32)(i / config->window_height) * (float32)config->scale_factor;
-
       frect.x = (i % config->window_height) * config->scale_factor;
       frect.y = (i / config->window_height) * config->scale_factor;
       
       if(chip8->display[i]){
           // if pixel is on draw fg color (white)
-          // SDL_RectToFRect(&rect,&frect);
           SDL_SetRenderDrawColor(sdl->renderer, fg_r, fg_g, fg_b, fg_a);
           SDL_RenderFillRect(sdl->renderer, &frect);
-          // SDL_RenderRect(sdl->renderer, &frect);
       } else {
           // else draw bg color (black)
-          // SDL_RectToFRect(&rect,&frect);
           SDL_SetRenderDrawColor(sdl->renderer, bg_r, bg_g, bg_b, bg_a);
           SDL_RenderFillRect(sdl->renderer, &frect);
-          // SDL_RenderRect(sdl->renderer, &frect);
       }
   }
   SDL_RenderPresent(sdl->renderer);
@@ -440,6 +436,7 @@ void update_screen(sdl_t *sdl, config_t *config, chip8_t *chip8){
 
 // handle_input---------------------------------------
 void handle_input(sdl_t *sdl, chip8_t *chip8){
+    
 
     while(SDL_PollEvent(&sdl->event)){
         switch(sdl->event.type){
