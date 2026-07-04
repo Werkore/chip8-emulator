@@ -11,7 +11,8 @@
 	in {
 		devShells."${system}".default = pkgs.mkShell {
 		  packages = with pkgs; [
-		  sdl3
+		  sdl3.lib
+			sdl3.dev
 		  clang
 
 		
